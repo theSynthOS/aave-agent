@@ -15,6 +15,8 @@ export default defineConfig({
         "https",
         "http",
         "agentkeepalive",
+        "viem",
+        "@elizaos/core"
         // Add other modules you want to externalize
     ],
 });

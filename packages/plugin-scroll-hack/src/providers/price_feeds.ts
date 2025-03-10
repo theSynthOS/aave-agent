@@ -1,12 +1,8 @@
-import { composeContext, Provider, State } from "@elizaos/core";
-import { generateObjectArray } from "@elizaos/core";
-import { MemoryManager } from "@elizaos/core";
 import {
-    type ActionExample,
     type IAgentRuntime,
     type Memory,
-    ModelClass,
-    type Evaluator,
+    type Provider,
+    type State,
 } from "@elizaos/core";
 import { createPublicClient, http } from "viem";
 import { scrollSepolia } from "viem/chains";
