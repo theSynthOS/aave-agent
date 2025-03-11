@@ -22,6 +22,7 @@ import type {
     Account,
     PrivateKeyAccount,
 } from "viem";
+import * as path from "path";
 import * as viemChains from "viem/chains";
 
 import type { SupportedChain } from "./types";
