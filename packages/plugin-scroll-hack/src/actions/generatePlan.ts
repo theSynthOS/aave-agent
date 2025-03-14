@@ -18,7 +18,7 @@ export const generatePlanAction: Action = {
         return true;
     },
     description:
-        "Create a multisig wallet for the user based on the user's criteria once a user had choosen the asset to invest in",
+        "Generate a plan for the user based on the user's criteria once a user had choosen the asset to invest in",
     handler: async (
         _runtime: IAgentRuntime,
         _message: Memory,
@@ -26,175 +26,17 @@ export const generatePlanAction: Action = {
         _options: { [key: string]: unknown },
         _callback: HandlerCallback): Promise<boolean> => {
 
-        // First check existing memories for a wallet
-        const memories = await _runtime.messageManager.getMemoriesByRoomIds({roomIds: [_message.roomId]});
-        console.log('[CREATE_MULTISIG] Retrieved memories:', memories.length);
-
-        let userAddress = "";
-        // Check for existing wallet in memories
-        for (const memory of memories) {
-            if (memory.content.actions === "GET_USER_WALLET" && 
-                memory.content.wallet && 
-                isValidEthereumAddress(memory.content.wallet as string)) {
-                userAddress = memory.content.wallet as string;
-                console.log('[CREATE_MULTISIG] Found existing valid user wallet address:', userAddress);
-                break;
-            }
-        }
-
-        // If no wallet found in memories, try to extract from current message
-        if (!userAddress) {
-            console.log('[CREATE_MULTISIG] No existing wallet found, checking current message');
-            const promptGetWallet = await generateText({
-                runtime: _runtime,
-                modelClass: ModelClass.SMALL,
-                context: `Get the wallet of the user from the message ${_message.content.text} and only return the wallet address and nothing else`,
-            });
-
-            if (promptGetWallet) {
-                const cleanWalletAddress = promptGetWallet.trim();
-                if (isValidEthereumAddress(cleanWalletAddress)) {
-                    console.log('[CREATE_MULTISIG] Found valid wallet in current message:', cleanWalletAddress);
-                    
-                    // Save the wallet address using GET_USER_WALLET action
-                    const walletMemory: Memory = {
-                        userId: _message.agentId,
-                        agentId: _message.agentId,
-                        roomId: _message.roomId,
-                        content: {
-                            text: cleanWalletAddress,
-                            actions: "GET_USER_WALLET",
-                            source: _message.content?.source,
-                            wallet: cleanWalletAddress,
-                        } as Content,
-                    };
-
-                    await _runtime.messageManager.createMemory(walletMemory);
-                    console.log('[CREATE_MULTISIG] Saved new wallet address to memory');
-                    userAddress = cleanWalletAddress;
-                }
-            }
-        }
-
-        // If still no valid wallet address, ask user to provide one
-        if (!userAddress) {
-            console.log('[CREATE_MULTISIG] No valid wallet address found');
-            _callback({
-                text: "I'll need your wallet address to create a multisig wallet. Could you please provide it?",
-            });
-            return false;
-        }
-
-        console.log('[CREATE_MULTISIG] Proceeding with multisig creation for address:', userAddress);
-
-        // Rest of the multisig creation logic
-        console.log('[CREATE_MULTISIG] Initializing wallet provider');
-        const walletProvider = await initWalletProvider(_runtime);
-        const address = walletProvider.getAddress();
-        console.log('[CREATE_MULTISIG] Agent wallet address:', address);
-            
-        console.log('[CREATE_MULTISIG] Making API request with payload:', {
-            agentId: _runtime.agentId,
-            agentAddress: address,
-            address: userAddress,
+       try {
+        // get the user's criteria
+        const userCriteriaPayload = await generateText({
+            runtime: _runtime,
+            modelClass: ModelClass.LARGE,
+            context: "Generate a plan for the user based on the user's criteria once a user had choosen the asset to invest in",
         });
-
-        console.log('[CREATE_MULTISIG] Starting handler execution');
-        const response = await fetch(`http://localhost:3001/api/wallet/get/multisig`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                agentAddress: address,
-                userAddress: userAddress
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            if (data) {
-                console.log('[CREATE_MULTISIG] Multisig wallet address:', data);
-                _callback({
-                    text: `Your multisig wallet address is: ${data.multisig_address}`
-                });
-                return true;
-            }
-        }
-        
-        try {
-            const response = await fetch("http://localhost:3001/api/wallet/create", {
-                method: "POST",
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    agentId: _runtime.agentId,
-                    agentAddress: address,
-                    userAddress: userAddress,
-                }),
-            });
-
-            // Log the raw response first
-            console.log('[CREATE_MULTISIG] Response status:', response.status);
-            
-            // Check if response is ok before trying to parse JSON
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('[CREATE_MULTISIG] Server returned error:', errorText);
-                throw new Error(`Server returned ${response.status}: ${errorText}`);
-            }
-
-            const responseData = await response.json();
-            console.log('[CREATE_MULTISIG] API response:', responseData);
-
-            if (responseData.error) {
-                console.log('[CREATE_MULTISIG] API returned error:', responseData.error);
-                return false;
-            }
-
-            const multisigAddress = responseData.data.safeAddress;
-            console.log('[CREATE_MULTISIG] Multisig wallet created at:', multisigAddress);
-
-            const formattedResponse = `Great news! I've successfully created a new multisig wallet for you. 
-Here are the details:
-- Multisig Wallet Address: ${multisigAddress}
-- Status: Successfully created and deployed
-- Connected to your address: ${userAddress}
-
-You can now use this multisig wallet for secure transactions. Would you like to know what you can do with it?`;
-
-            const newMemory: Memory = {
-                userId: _message.agentId,
-                agentId: _message.agentId,
-                roomId: _message.roomId,
-                content: {
-                    text: formattedResponse,
-                    actions: "CREATE_MULTISIG",
-                } as Content,
-            };
-
-            console.log('[CREATE_MULTISIG] Creating memory with response');
-            await _runtime.messageManager.createMemory(newMemory);
-
-            _callback({
-                text: "Multisig wallet created successfully",
-            })
-
-            console.log('[CREATE_MULTISIG] Handler completed successfully');
-            return true;
-        } catch (error) {
-            console.error('[CREATE_MULTISIG] Error occurred:', error);
-            if (error instanceof Error) {
-                console.error('[CREATE_MULTISIG] Error details:', error.message);
-            }
-            _callback({
-                text: "Sorry, there was an error creating the multisig wallet. Please try again later.",
-            });
-            return false;
-        }
+       }catch(error){
+        console.error('[GENERATE_PLAN] Error:', error);
+        return false;
+       }
     },
     examples: [
         // Example 1: Standard flow where user already has wallet registered
