@@ -21,11 +21,87 @@ const isValidEthereumAddress = (address: string): boolean => {
     return typeof address === 'string' && addressRegex.test(address);
 };
 
+interface MultisigPayload {
+    address: string,
+    userAddress: string,
+    agentAddress: string
+
+}
+
 export const createMultisigAction: Action = {
     name: "CREATE_MULTISIG",
     similes: ["CREATE_MULTISIG", "START_PLAN", "EXECUTE_PLAN"],
-    validate: async (_runtime: IAgentRuntime, _message: Memory) => {
-        return true;
+    validate: async (_runtime: IAgentRuntime, _message: Memory, _state: State) => {
+        try {
+            
+            // First check if we already have a multisig in state
+            if (_state?.multisigWallet) {
+                console.log('[CREATE_MULTISIG] Multisig already exists in state:', JSON.stringify(_state.multisigWallet));
+                return false;
+            }
+            
+            // Get user wallet address from state or memories
+            let userAddress = "";
+            const memories = await _runtime.messageManager.getMemoriesByRoomIds({roomIds: [_message.roomId]});
+            
+            // Check for existing wallet in memories
+            for (const memory of memories) {
+                if (memory.content.actions === "GET_USER_WALLET" && 
+                    memory.content.wallet && 
+                    isValidEthereumAddress(memory.content.wallet as string)) {
+                    userAddress = memory.content.wallet as string;
+                    break;
+                }
+            }
+            
+            if (!userAddress) {
+                console.log('[CREATE_MULTISIG] No user wallet found, cannot check for existing multisig');
+                return false;
+            }
+            
+            // Initialize wallet provider to get agent address
+            const walletProvider = await initWalletProvider(_runtime);
+            const agentAddress = walletProvider.getAddress();
+            
+            // Check if multisig already exists for this user by calling the API
+            console.log('[CREATE_MULTISIG] Checking if multisig exists for user:', userAddress);
+            const response = await fetch(`http://localhost:3001/api/wallet/get/multisig`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    agentAddress: agentAddress,
+                    userAddress: userAddress
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data && data.multisig_address) {
+                    console.log('[CREATE_MULTISIG] Found existing multisig:', data.multisig_address);
+                    
+                    // Update state with the existing multisig address
+                    await _runtime.composeState(_message, {
+                        multisigWallet: {
+                            address: data.multisig_address,
+                            userAddress: userAddress,
+                            agentAddress: agentAddress
+                        }
+                    });
+                    
+                    return false; // Don't create a new multisig
+                }
+            }
+            
+            // Regular validation logic for multisig creation
+            const text = _message.content?.text?.toLowerCase() || "";
+            return text.includes("create") && text.includes("multisig");
+        } catch (error) {
+            console.error('[CREATE_MULTISIG] Error in validate:', error);
+            return false;
+        }
     },
     description:
         "Create a multisig wallet for the user based on the user's criteria once a user had choosen the asset to invest in",

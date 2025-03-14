@@ -1,2 +1,1 @@
-export * from "./fact.js";
-export * from "./goal.js";
+export * from "./aave-returns.js";

@@ -4,6 +4,7 @@ import {
     type Provider,
     type State,
 } from "@elizaos/core";
+import { initWalletProvider } from "./wallet";
 
 // Add utility function to validate Ethereum addresses
 const isValidEthereumAddress = (address: string): boolean => {
@@ -36,7 +37,7 @@ const MultisigWalletProvider: Provider = {
                 return `multisig wallet not found`
             }
 
-            const agentAddress = runtime.agentId;
+            const agentAddress = (await initWalletProvider(runtime)).account.address;
 
             // Fetch multisig wallet information from the API
             const response = await fetch(`http://localhost:3001/api/wallet/get/multisig`, {
@@ -50,6 +51,8 @@ const MultisigWalletProvider: Provider = {
                     userAddress
                 })
             });
+
+            console.log('[MULTISIG_PROVIDER] API response:', response);
 
             if (!response.ok) {
                 const errorText = await response.text();

@@ -21,6 +21,9 @@
     "dependencies": {
         "@elizaos/core": "workspace:*",
         "@elizaos/plugin-tee": "workspace:*",
+        "@safe-global/api-kit": "^3.0.0",
+        "@safe-global/protocol-kit": "^6.0.0",
+        "@safe-global/types-kit": "^2.0.0",
         "tsup": "8.3.5"
     },
     "scripts": {
