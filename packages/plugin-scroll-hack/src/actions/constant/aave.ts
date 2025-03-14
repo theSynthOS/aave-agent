@@ -2,7 +2,8 @@ export const assets = [
     {
         "asset": "WBTC",
         "address": "0x5EA79f3190ff37418d42F9B2618688494dBD9693",
-        "oracleAddress": "0x87dce67002e66C17BC0d723Fe20D736b80CAaFda"
+        "oracleAddress": "0x87dce67002e66C17BC0d723Fe20D736b80CAaFda",
+        "aaveAddress": "0x48914C788295b5db23aF2b5F0B3BE775C4eA9440"
     },
     {
         "asset": "USDC",
