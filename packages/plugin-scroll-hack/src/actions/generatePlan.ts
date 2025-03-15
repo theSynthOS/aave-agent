@@ -9,16 +9,19 @@ import {
     ModelClass,
     generateText,
 } from "@elizaos/core";
-import { initWalletProvider } from "../providers/wallet";
 
 export const generatePlanAction: Action = {
     name: "GENERATE_PLAN",
     similes: ["GENERATE_PLAN", "CREATE_PLAN", "EXECUTION_PLAN"],
     validate: async (_runtime: IAgentRuntime, _message: Memory) => {
-        return true;
+        const text = _message.content?.text?.toLowerCase() || "";
+        const planKeywords = ["plan", "strategy", "approach", "steps", "how to"];
+        
+        // Check if message contains plan-related keywords
+        return planKeywords.some(keyword => text.includes(keyword));
     },
     description:
-        "Generate a plan for the user based on the user's criteria once a user had choosen the asset to invest in",
+        "Generate a plan for the user based on the user's criteria for investing in crypto assets",
     handler: async (
         _runtime: IAgentRuntime,
         _message: Memory,
@@ -27,93 +30,71 @@ export const generatePlanAction: Action = {
         _callback: HandlerCallback): Promise<boolean> => {
 
        try {
-        // get the user's criteria
-        const userCriteriaPayload = await generateText({
+        // Extract user's criteria from the message
+        const userCriteria = _message.content?.text || "";
+        
+        // Generate a plan based on user's criteria
+        const planPrompt = `
+You are a DeFi investment advisor helping a user create an investment plan.
+
+User's request: ${userCriteria}
+
+Create a detailed investment plan that includes:
+1. Analysis of what the user is looking for
+2. Recommended assets based on their criteria (focus on popular assets like ETH, WBTC, USDC, DAI)
+3. Suggested allocation strategy
+4. Expected returns and risks
+5. Step-by-step implementation process
+
+Make the plan professional but easy to understand.
+`;
+        
+        const planResponse = await generateText({
             runtime: _runtime,
-            modelClass: ModelClass.LARGE,
-            context: "Generate a plan for the user based on the user's criteria once a user had choosen the asset to invest in",
+            context: planPrompt,
+            modelClass: ModelClass.LARGE
         });
-       }catch(error){
+        
+        // Send the plan to the user
+        await _callback({
+            text: planResponse,
+            action: "GENERATE_PLAN"
+        });
+        
+        // Store the plan in memory for future reference
+        const planMemory: Memory = {
+            userId: _message.userId,
+            agentId: _message.agentId,
+            roomId: _message.roomId,
+            content: {
+                text: "Investment plan",
+                action: "GENERATE_PLAN",
+                source: _message.content?.source,
+                plan: planResponse
+            } as Content,
+        };
+
+        await _runtime.messageManager.createMemory(planMemory);
+        
+        return true;
+       } catch(error) {
         console.error('[GENERATE_PLAN] Error:', error);
+        await _callback({
+            text: `I encountered an error while generating your investment plan: ${error instanceof Error ? error.message : String(error)}`
+        });
         return false;
        }
     },
     examples: [
-        // Example 1: Standard flow where user already has wallet registered
         [
             {
                 user: "{{user1}}",
-                content: { text: "Hey i would like to know whats the best investment i should make on AAVE" },
+                content: { text: "Can you help me create a plan for investing in DeFi?" },
             },
             {
                 user: "{{user2}}",
-                content: { text: "Based on the data i have, i would recommend you to invest in {{result}} would you like to create a multisig wallet for this?", action: "NONE" },
-            },
-            {
-                user: "{{user1}}",
-                content: { text: "Yes", action: "CREATE_MULTISIG" },
-            },
-            {
-                user: "{{user2}}",
-                content: { text: "Great news! I've successfully created a new multisig wallet for you. Here are the details: Multisig Wallet Address: 0xabc123, Status: Successfully created and deployed, Connected to your address: 0x456def. You can now use this multisig wallet for secure transactions. Would you like to know what you can do with it?", action: "CREATE_MULTISIG" },
-            }
-        ],
-        // Example 2: Flow where user needs to provide wallet first
-        [
-            {
-                user: "{{user1}}",
-                content: { text: "I want to create a multisig wallet", action: "CREATE_MULTISIG" },
-            },
-            {
-                user: "{{user2}}",
-                content: { text: "Could you give me your wallet address? (I need it to create a multisig wallet for you)", action: "NONE" },
-            },
-            {
-                user: "{{user1}}",
-                content: { text: "0x1234567890abcdef", action: "GET_USER_WALLET" },
-            },
-            {
-                user: "{{user2}}",
-                content: { text: "Great news! I've successfully created a new multisig wallet for you. Here are the details: Multisig Wallet Address: 0x9876543210fedcba, Status: Successfully created and deployed, Connected to your address: 0x1234567890abcdef. You can now use this multisig wallet for secure transactions. Would you like to know what you can do with it?", action: "CREATE_MULTISIG" },
-            }
-        ],
-        // Example 3: Flow starting from investment discussion
-        [
-            {
-                user: "{{user1}}",
-                content: { text: "What's the best way to invest in DeFi?", action: "NONE" },
-            },
-            {
-                user: "{{user2}}",
-                content: { text: "Based on your risk profile, I would recommend investing in Aave. Would you like to set up a multisig wallet for safer transactions?", action: "NONE" },
-            },
-            {
-                user: "{{user1}}",
-                content: { text: "Yes, that sounds good", action: "CREATE_MULTISIG" },
-            },
-            {
-                user: "{{user2}}",
-                content: { text: "I'll need your wallet address to create the multisig wallet. Could you please provide it?", action: "NONE" },
-            },
-            {
-                user: "{{user1}}",
-                content: { text: "Here it is: 0xdef456789", action: "GET_USER_WALLET" },
-            },
-            {
-                user: "{{user2}}",
-                content: { text: "Great news! I've successfully created a new multisig wallet for you. Here are the details: Multisig Wallet Address: 0xfed987654, Status: Successfully created and deployed, Connected to your address: 0xdef456789. You can now use this multisig wallet for secure transactions. Would you like to know what you can do with it?", action: "CREATE_MULTISIG" },
-            }
-        ],
-        // Example 4: Direct multisig creation with existing wallet
-        [
-            {
-                user: "{{user1}}",
-                content: { text: "Create a multisig wallet for me please", action: "CREATE_MULTISIG" },
-            },
-            {
-                user: "{{user2}}",
-                content: { text: "Great news! I've successfully created a new multisig wallet for you. Here are the details: Multisig Wallet Address: 0x123abc456, Status: Successfully created and deployed, Connected to your address: 0x789def012. You can now use this multisig wallet for secure transactions. Would you like to know what you can do with it?", action: "CREATE_MULTISIG" },
+                content: { text: "# DeFi Investment Plan\n\n## Analysis of Your Needs\nBased on your request, you're looking to enter the DeFi space with a strategic investment approach. DeFi offers various opportunities for generating yield through lending, liquidity provision, and staking.\n\n## Recommended Assets\n\n### 1. Stablecoins (40-50% allocation)\n- **USDC**: Highly regulated, secure stablecoin\n- **DAI**: Decentralized stablecoin, more resistant to regulatory risks\n\n### 2. Blue-chip Crypto (30-40% allocation)\n- **ETH**: The foundation of most DeFi protocols\n- **WBTC**: Bitcoin exposure in the DeFi ecosystem\n\n### 3. DeFi Protocol Tokens (10-20% allocation)\n- Consider small allocations to governance tokens of platforms you use\n\n## Implementation Strategy\n\n1. **Start with Aave**: Deposit stablecoins and ETH to earn yield\n2. **Dollar-cost average**: Invest gradually rather than all at once\n3. **Diversify across protocols**: Consider using 2-3 different platforms\n\n## Expected Returns and Risks\n\n### Returns\n- Stablecoins: 1-5% APY\n- ETH/WBTC lending: 0.5-2% APY\n- Higher returns possible with more complex strategies\n\n### Risks\n- Smart contract vulnerabilities\n- Market volatility (for non-stablecoins)\n- Regulatory changes\n- Impermanent loss in liquidity pools\n\n## Next Steps\n\n1. Set up a secure wallet (MetaMask recommended)\n2. Purchase your initial assets\n3. Connect to Aave and deposit funds\n4. Monitor your positions weekly\n5. Rebalance quarterly\n\nWould you like me to help you implement any specific part of this plan?", action: "GENERATE_PLAN" },
             }
         ]
-    ] as ActionExample[][],
+    ],
 } as Action;
