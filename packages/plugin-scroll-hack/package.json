@@ -24,6 +24,7 @@
         "@safe-global/api-kit": "^3.0.0",
         "@safe-global/protocol-kit": "^6.0.0",
         "@safe-global/types-kit": "^2.0.0",
+        "thirdweb": "^5.80.0",
         "tsup": "8.3.5"
     },
     "scripts": {
