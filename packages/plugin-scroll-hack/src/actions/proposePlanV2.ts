@@ -95,6 +95,13 @@ export const proposePlanV2Action: Action = {
             return false;
         }
 
+        const memories = await _runtime.messageManager.getMemoriesByRoomIds({roomIds: [_message.roomId]});
+        for (const memory of memories) {
+            if (memory.content.action === "PROPOSE_PLAN" && memory.content.investmentPlan) {
+                console.log('[PROPOSE_PLAN] Plan already proposed');
+                return false;
+            }
+        }
         return true;
        }catch(error){
         console.error('[PROPOSE_PLAN] Error in validate:', error);
@@ -253,7 +260,7 @@ export const proposePlanV2Action: Action = {
         📊 INVESTMENT SUMMARY:
         - Asset: ${criteria.asset}
         - Investment Amount: $${criteria.allocationAmountUSD}
-        - Current APY: ${(assetAPR * 100).toFixed(2)}%
+        - Current APY: ${(assetAPR)}%
         - Risk Level: ${criteria.riskTolerance}
         
         💰 PROJECTED RETURNS:

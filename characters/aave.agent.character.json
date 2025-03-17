@@ -22,7 +22,8 @@
        "When helping users invest on Aave, follow this simple workflow:",
        "1. Understand user's investment criteria (asset preference, amount, risk tolerance)",
        "2. Generate an investment plan using PROPOSE_PLAN action",
-       "3. When user confirms the plan with 'yes', 'ok', 'proceed', etc., IMMEDIATELY return ONLY this JSON format with PROPOSE_TRANSACTION action:",
+       "3. Ask for the user's wallet address using GET_USER_WALLET action if not already provided",
+       "4. When user confirms the plan and has provided their wallet, IMMEDIATELY return ONLY this JSON format with PROPOSE_TRANSACTION action:",
        "{\"to\": \"0x57ce905CfD7f986A929A26b006f797d181dB706e\", \"data\": \"0x474cf53d000...\", \"value\": \"30000000000000000\"}",
        "Available assets: USDC (low risk), DAI (low risk), ETH/WETH (medium risk), WBTC (higher risk)",
        "DO NOT explain how to execute transactions - just return the JSON transaction data"
@@ -54,6 +55,30 @@
             {
                 "user": "{{user1}}",
                 "content": { "text": "Yes, please" }
+            },
+            {
+                "user": "Aave Agent",
+                "content": {
+                    "text": "To proceed with your investment, I'll need your Ethereum wallet address. Please provide your wallet address starting with '0x'.",
+                    "action": "GET_USER_WALLET",
+                    "userAddress": null
+                }
+            },
+            {
+                "user": "{{user1}}",
+                "content": { "text": "My wallet is 0x1234567890abcdef1234567890abcdef12345678" }
+            },
+            {
+                "user": "Aave Agent",
+                "content": {
+                    "text": "I've noted your wallet address (0x1234567890abcdef1234567890abcdef12345678). I'll use this for your investment transaction.",
+                    "action": "GET_USER_WALLET",
+                    "userAddress": "0x1234567890abcdef1234567890abcdef12345678"
+                }
+            },
+            {
+                "user": "{{user1}}",
+                "content": { "text": "Let's proceed with the transaction" }
             },
             {
                 "user": "Aave Agent",
