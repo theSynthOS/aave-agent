@@ -9,12 +9,10 @@ import {
     ModelClass,
 } from "@elizaos/core";
 import aaveEthAbi from "./constant/abi/aaveEthAbi.json";
-import { encodeFunctionData, encodePacked, parseEther, keccak256, toBytes, bytesToHex, http, createPublicClient, createWalletClient, publicActions } from "viem";
+import { encodeFunctionData, parseEther } from "viem";
 import { initWalletProvider } from "../providers/wallet";
 import registerTaskAbi from "./constant/abi/registerTaskAbi.json";
 import { v4 as uuidv4 } from 'uuid';
-import { scrollSepolia } from "viem/chains";
-import { privateKeyToAccount } from "viem/accounts";
 import { ethers } from "ethers";
 // Define interfaces for our state
 interface AaveInvestment {
@@ -45,51 +43,6 @@ function generateTaskId(): string {
     return randomUuid;
 }
 
-// Add this function to get detailed wallet information
-async function logWalletDetails(provider, chainId) {
-    try {
-        const account = provider.account;
-        console.log(`[PROPOSE_TRANSACTION] Account address: ${account.address}`);
-        
-        // Get the chain information
-        const publicClient = provider.getPublicClient(chainId);
-        const chainInfo = await publicClient.getChainId();
-        console.log(`[PROPOSE_TRANSACTION] Connected to chain ID: ${chainInfo}`);
-        
-        // Get the balance
-        const balance = await publicClient.getBalance({ address: account.address });
-        console.log(`[PROPOSE_TRANSACTION] Account balance: ${balance.toString()} wei (${Number(balance) / 1e18} ETH)`);
-        
-        // Get gas price
-        const gasPrice = await publicClient.getGasPrice();
-        console.log(`[PROPOSE_TRANSACTION] Current gas price: ${gasPrice.toString()} wei (${Number(gasPrice) / 1e9} gwei)`);
-        
-        // Get L1 fee data if available (specific to L2 networks)
-        try {
-            // This is specific to Scroll - adjust if needed
-            const l1FeeData = await publicClient.request({
-                method: 'eth_l1FeeData',
-                params: []
-            }).catch(() => null);
-            
-            if (l1FeeData) {
-                console.log(`[PROPOSE_TRANSACTION] L1 fee data:`, l1FeeData);
-            }
-        } catch (e) {
-            console.log(`[PROPOSE_TRANSACTION] L1 fee data not available:`, e.message);
-        }
-        
-        return {
-            address: account.address,
-            chainId: chainInfo,
-            balance: balance.toString(),
-            gasPrice: gasPrice.toString()
-        };
-    } catch (error) {
-        console.error(`[PROPOSE_TRANSACTION] Error getting wallet details:`, error);
-        return null;
-    }
-}
 
 export const proposeTransactionV2Action: Action = {
     name: "PROPOSE_TRANSACTION",
@@ -184,7 +137,6 @@ export const proposeTransactionV2Action: Action = {
 
            // Log detailed wallet information before attempting transaction
            console.log(`[PROPOSE_TRANSACTION] Preparing transaction on chain: ${chainId}`);
-           const walletDetails = await logWalletDetails(walletProvider, chainId);
 
            // Generate task ID
            const taskId = generateTaskId();
@@ -252,10 +204,39 @@ export const proposeTransactionV2Action: Action = {
     );
     
     console.log(`[PROPOSE_TRANSACTION] Transaction sent with hash: ${transaction.hash}`);
+
+    //here give a gap of time like 10 seconds
+    await new Promise(resolve => setTimeout(resolve, 10000));
+
+    const taskExecutionUrl = `https://31a6-2001-d08-f0-8b29-908b-5e15-5bdb-5cdb.ngrok-free.app/task/execute?taskId=${taskId}`;
+
+    const response = await fetch(taskExecutionUrl, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            txUUID: taskId,
+            agentId: 0
+        }),
+    });
+
+    const responseBody = await response.json();
+
+    console.log(`[PROPOSE_TRANSACTION] Response: ${JSON.stringify(responseBody)}`);
+
+    if (!response.ok) {
+        console.error(`[PROPOSE_TRANSACTION] Failed to execute task: ${response.statusText}`);
+        await _callback({
+            text: `propose transaction failed, please try again`,
+            action: "PROPOSE_TRANSACTION"
+        });
+        return false;
+    }
             
             // Send only the transaction JSON to the user - IMPORTANT: No additional text
             await _callback({
-                text: `Task is registered with hash: ${transaction.hash}, once its done there will be a button to execute your eth deposit`,
+                text: ` transaction with txUUID: ${taskId} has been verified by the plugins to be safe and what you intend to do, you can go ahead and execute it now by clicking on execute`,
                 action: "PROPOSE_TRANSACTION"
             });
             
