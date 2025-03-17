@@ -121,9 +121,14 @@ ENV SERVER_PORT=3000 \
     ANKR_RUNTIME_CHECK_MODE=false \
     ANKR_SPASH=true \
     ENABLE_TEE_LOG=false \
+<<<<<<< HEAD
     REDPILL_API_KEY=${REDPILL_API_KEY} \
     EVM_PRIVATE_KEY=${EVM_PRIVATE_KEY} \
     EVM_PROVIDER_URL=https://scroll-sepolia.g.alchemy.com/v2/417Qqmd4tZferLGglrlPP1EPt1wOywkz 
+=======
+    REDPILL_API_KEY=${REDPILL_API_KEY}
+    EVM_PRIVATE_KEY=${EVM_PRIVATE_KEY}
+>>>>>>> 5e68ad68 (feat: new env)
 
 # Expose necessary ports
 EXPOSE 3000 5173
