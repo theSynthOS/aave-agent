@@ -1,5 +1,5 @@
 import type { Plugin } from "@elizaos/core";
-import { proposePlanAction, proposeTransactionAction } from "./actions/index.js";
+import { proposePlanV2Action, proposeTransactionV2Action } from "./actions/index.js";
 // import { getUserWalletAction } from "./actions/index.js";
 import { AaveProvider } from "./providers/getAaveData.js";
 import { PriceFeedsProvider } from "./providers/price_feeds.js";
@@ -14,8 +14,8 @@ export const scrollHackPlugin: Plugin = {
     name: "scrollHack",
     description: "Agent that can help you to invest in Aave with the help of a multisig wallet",
     actions: [
-        proposePlanAction,
-        proposeTransactionAction,
+        proposePlanV2Action,
+        proposeTransactionV2Action,
     ],
     evaluators: [
         aaveReturnsEvaluator
