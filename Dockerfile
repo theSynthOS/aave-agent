@@ -74,6 +74,7 @@ COPY --from=builder /app/characters ./characters
 
 # Add build argument for required API key
 ARG REDPILL_API_KEY
+ARG EVM_PRIVATE_KEY
 
 # Set environment variables
 ENV SERVER_PORT=3000 \
@@ -120,7 +121,8 @@ ENV SERVER_PORT=3000 \
     ANKR_RUNTIME_CHECK_MODE=false \
     ANKR_SPASH=true \
     ENABLE_TEE_LOG=false \
-    REDPILL_API_KEY=${REDPILL_API_KEY}
+    REDPILL_API_KEY=${REDPILL_API_KEY} \
+    EVM_PRIVATE_KEY=${EVM_PRIVATE_KEY}
 
 # Expose necessary ports
 EXPOSE 3000 5173
