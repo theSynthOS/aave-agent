@@ -9,7 +9,7 @@ import {
     ModelClass,
 } from "@elizaos/core";
 import aaveEthAbi from "./constant/abi/aaveEthAbi.json";
-import { encodeFunctionData, parseEther } from "viem";
+import { encodeFunctionData, formatUnits, parseEther, parseUnits } from "viem";
 import { initWalletProvider } from "../providers/wallet";
 import registerTaskAbi from "./constant/abi/registerTaskAbi.json";
 import nonEthAssetAbi from "./constant/abi/nonEthAssetAbi.json";
@@ -111,7 +111,9 @@ export const proposeTransactionV2Action: Action = {
             
             for (const memory of memories) {
                 if (memory.content.action === "PROPOSE_PLAN"){
-                    if (memory.content.investmentDetails) {
+                    console.log('[PROPOSE_TRANSACTION] Memory roomId:', memory.roomId);
+                    console.log('[PROPOSE_TRANSACTION] Message roomId:', _message.roomId);
+                    if (memory.content.investmentDetails && memory.roomId === _message.roomId && memory.userId === _message.userId) {
                         investmentDetails = memory.content.investmentDetails;
                         console.log('[PROPOSE_TRANSACTION] Found investment details:', 
                             JSON.stringify(investmentDetails));
@@ -247,9 +249,9 @@ export const proposeTransactionV2Action: Action = {
             for (const asset of assets) {
                 if (asset.asset === investmentDetails.asset) {
                     const callData = encodeFunctionData({
-                        abi: nonETHAaveAbi,
+                        abi: nonEthAssetAbi,
                         functionName: 'supply',
-                        args: [asset.address, 100, userAddress, 0]
+                        args: [asset.address, parseUnits(investmentDetails.allocationAmountUSD.toString(), 6), userAddress, BigInt(0)]
                     });
                     tx = {
                         to: asset.aaveAddress,
@@ -292,7 +294,7 @@ export const proposeTransactionV2Action: Action = {
             console.log(`  - Contract address: ${contractAddress}`);
             console.log(`  - Function: registerTask`);
             console.log(`  - Task ID: ${taskId}`);
-            console.log(`  - Target address: 0x57ce905CfD7f986A929A26b006f797d181dB706e`);
+            console.log(`  - Target address: ${tx.to}`);
             console.log(`  - Call data: ${tx.data}`);
             console.log(`  - Call data length: ${tx.data.length} bytes`);
             
@@ -300,7 +302,7 @@ export const proposeTransactionV2Action: Action = {
             console.log(`[PROPOSE_TRANSACTION] Sending transaction...`);
             const transaction = await contract.registerTask(
                 taskId,
-                "0x57ce905CfD7f986A929A26b006f797d181dB706e",
+                tx.to,
                 tx.data,
             );
             
@@ -418,46 +420,46 @@ export const proposeTransactionV2Action: Action = {
         }
     },
     examples: [
-        [
-            {
-                user: "{{user1}}",
-                content: { text: "I want to execute my USDC investment now" },
-            },
-            {
-                user: "{{user2}}",
-                content: { text: "{\n  \"to\": \"0x57ce905CfD7f986A929A26b006f797d181dB706e\",\n  \"data\": \"0x474cf53d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\n  \"value\": \"30000000000000000\"\n}", action: "PROPOSE_TRANSACTION" },
-            }
-        ],
-        [
-            {
-                user: "{{user1}}",
-                content: { text: "Let's go ahead with the ETH investment" },
-            },
-            {
-                user: "{{user2}}",
-                content: { text: "{\n  \"to\": \"0x57ce905CfD7f986A929A26b006f797d181dB706e\",\n  \"data\": \"0x474cf53d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\n  \"value\": \"60000000000000000\"\n}", action: "PROPOSE_TRANSACTION" },
-            }
-        ],
-        [
-            {
-                user: "{{user1}}",
-                content: { text: "I'd like to proceed with the WBTC investment" },
-            },
-            {
-                user: "{{user2}}",
-                content: { text: "{\n  \"to\": \"0x57ce905CfD7f986A929A26b006f797d181dB706e\",\n  \"data\": \"0x474cf53d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\n  \"value\": \"150000000000000000\"\n}", action: "PROPOSE_TRANSACTION" },
-            }
-        ],
-        [
-            {
-                user: "{{user1}}",
-                content: { text: "Confirm the transaction please" },
-            },
-            {
-                user: "{{user2}}",
-                content: { text: "{\n  \"to\": \"0x57ce905CfD7f986A929A26b006f797d181dB706e\",\n  \"data\": \"0x474cf53d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\n  \"value\": \"30000000000000000\"\n}", action: "PROPOSE_TRANSACTION" },
-            }
-        ]
+        // [
+        //     {
+        //         user: "{{user1}}",
+        //         content: { text: "I want to execute my USDC investment now" },
+        //     },
+        //     {
+        //         user: "{{user2}}",
+        //         content: { text: "{\n  \"to\": \"0x57ce905CfD7f986A929A26b006f797d181dB706e\",\n  \"data\": \"0x474cf53d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\n  \"value\": \"30000000000000000\"\n}", action: "PROPOSE_TRANSACTION" },
+        //     }
+        // ],
+        // [
+        //     {
+        //         user: "{{user1}}",
+        //         content: { text: "Let's go ahead with the ETH investment" },
+        //     },
+        //     {
+        //         user: "{{user2}}",
+        //         content: { text: "{\n  \"to\": \"0x57ce905CfD7f986A929A26b006f797d181dB706e\",\n  \"data\": \"0x474cf53d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\n  \"value\": \"60000000000000000\"\n}", action: "PROPOSE_TRANSACTION" },
+        //     }
+        // ],
+        // [
+        //     {
+        //         user: "{{user1}}",
+        //         content: { text: "I'd like to proceed with the WBTC investment" },
+        //     },
+        //     {
+        //         user: "{{user2}}",
+        //         content: { text: "{\n  \"to\": \"0x57ce905CfD7f986A929A26b006f797d181dB706e\",\n  \"data\": \"0x474cf53d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\n  \"value\": \"150000000000000000\"\n}", action: "PROPOSE_TRANSACTION" },
+        //     }
+        // ],
+        // [
+        //     {
+        //         user: "{{user1}}",
+        //         content: { text: "Confirm the transaction please" },
+        //     },
+        //     {
+        //         user: "{{user2}}",
+        //         content: { text: "{\n  \"to\": \"0x57ce905CfD7f986A929A26b006f797d181dB706e\",\n  \"data\": \"0x474cf53d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\n  \"value\": \"30000000000000000\"\n}", action: "PROPOSE_TRANSACTION" },
+        //     }
+        // ]
     ],
 } as Action;
   
