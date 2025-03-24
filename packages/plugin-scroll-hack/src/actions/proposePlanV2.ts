@@ -97,7 +97,9 @@ export const proposePlanV2Action: Action = {
 
         const memories = await _runtime.messageManager.getMemoriesByRoomIds({roomIds: [_message.roomId]});
         for (const memory of memories) {
-            if (memory.content.action === "PROPOSE_PLAN" && memory.content.investmentPlan) {
+            console.log('[PROPOSE_PLAN] Memory userId:', memory.userId);
+            console.log('[PROPOSE_PLAN] Message userId:', _message.userId);
+            if (memory.content.action === "PROPOSE_PLAN" && memory.content.investmentPlan && memory.userId === _message.userId) {
                 console.log('[PROPOSE_PLAN] Plan already proposed');
                 return false;
             }
@@ -305,15 +307,15 @@ export const proposePlanV2Action: Action = {
         }
     },
     examples: [
-        [
-            {
-                user: "{{user1}}",
-                content: { text: "I'm interested in investing in crypto on Aave" },
-            },
-            {
-                user: "{{user2}}",
-                content: { text: "Thank you for your interest in investing in USDC on Aave!\n\nBased on your criteria, here's my recommended investment plan:\n\n📊 INVESTMENT SUMMARY:\n- Asset: USDC\n- Investment Amount: $1000\n- Current APY: 0.36%\n- Risk Level: Low\n\n💰 PROJECTED RETURNS:\n- 30 days: $0.30\n- 90 days: $0.90\n- 180 days: $1.80\n\n🔍 WHY USDC?\nUSDC is a regulated stablecoin backed by US Dollar reserves, providing security and stability.\n\n⚠️ RISK CONSIDERATIONS:\nThis is a relatively low-risk investment as stablecoins maintain their peg to the US Dollar. However, smart contract risks still exist.\n\nWould you like me to prepare the transaction for this investment plan?", action: "PROPOSE_PLAN" },
-            }
-        ]
+        // [
+        //     {
+        //         user: "{{user1}}",
+        //         content: { text: "I'm interested in investing in crypto on Aave" },
+        //     },
+        //     {
+        //         user: "{{user2}}",
+        //         content: { text: "Thank you for your interest in investing in USDC on Aave!\n\nBased on your criteria, here's my recommended investment plan:\n\n📊 INVESTMENT SUMMARY:\n- Asset: USDC\n- Investment Amount: $1000\n- Current APY: 0.36%\n- Risk Level: Low\n\n💰 PROJECTED RETURNS:\n- 30 days: $0.30\n- 90 days: $0.90\n- 180 days: $1.80\n\n🔍 WHY USDC?\nUSDC is a regulated stablecoin backed by US Dollar reserves, providing security and stability.\n\n⚠️ RISK CONSIDERATIONS:\nThis is a relatively low-risk investment as stablecoins maintain their peg to the US Dollar. However, smart contract risks still exist.\n\nWould you like me to prepare the transaction for this investment plan?", action: "PROPOSE_PLAN" },
+        //     }
+        // ]
     ],
 } as Action; 
