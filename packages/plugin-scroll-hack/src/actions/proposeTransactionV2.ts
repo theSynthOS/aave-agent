@@ -323,7 +323,7 @@ export const proposeTransactionV2Action: Action = {
                     try {
                         console.log(`[PROPOSE_TRANSACTION] Attempt ${attempt} to execute task ${taskId}`);
                         
-                        const taskExecutionUrl = `https://31a6-2001-d08-f0-8b29-908b-5e15-5bdb-5cdb.ngrok-free.app/task/execute?taskId=${taskId}`;
+                        const taskExecutionUrl = `https://5a9b-2001-d08-f0-cbe1-e22e-b1a4-b267-d704.ngrok-free.app/task/execute?taskId=${taskId}`;
                         
                         const response = await fetch(taskExecutionUrl, {
                             method: "POST",
