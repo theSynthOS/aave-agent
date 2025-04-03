@@ -75,6 +75,7 @@ COPY --from=builder /app/characters ./characters
 # Add build argument for required API key
 ARG REDPILL_API_KEY
 ARG EVM_PRIVATE_KEY
+ARG OTHENTIC_AVS_TASK_EXECUTION_URL
 
 # Set environment variables
 ENV SERVER_PORT=3000 \
@@ -123,7 +124,8 @@ ENV SERVER_PORT=3000 \
     ENABLE_TEE_LOG=false \
     REDPILL_API_KEY=${REDPILL_API_KEY} \
     EVM_PRIVATE_KEY=${EVM_PRIVATE_KEY} \
-    EVM_PROVIDER_URL=https://scroll-sepolia.g.alchemy.com/v2/417Qqmd4tZferLGglrlPP1EPt1wOywkz 
+    EVM_PROVIDER_URL=https://scroll-sepolia.g.alchemy.com/v2/417Qqmd4tZferLGglrlPP1EPt1wOywkz \
+    OTHENTIC_AVS_TASK_EXECUTION_URL=${OTHENTIC_AVS_TASK_EXECUTION_URL}
 
 
 # Expose necessary ports
