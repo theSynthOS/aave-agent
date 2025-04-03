@@ -448,16 +448,19 @@ export const proposeTransactionV2Action: Action = {
                             );
                         }
 
-                        const response = await fetch(taskExecutionUrl, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                                txUUID: taskId,
-                                agentId: 0,
-                            }),
-                        });
+                        const response = await fetch(
+                            `${taskExecutionUrl}/task/execute?taskId=${taskId}`,
+                            {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({
+                                    txUUID: taskId,
+                                    agentId: 0,
+                                }),
+                            }
+                        );
 
                         lastResponse = response;
 
