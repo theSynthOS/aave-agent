@@ -447,6 +447,7 @@ export const proposeTransactionV2Action: Action = {
                                 "OTHENTIC_AVS_TASK_EXECUTION_URL not found in settings"
                             );
                         }
+
                         const response = await fetch(taskExecutionUrl, {
                             method: "POST",
                             headers: {
